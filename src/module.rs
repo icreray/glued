@@ -1,6 +1,6 @@
 pub use glued_macros::Module;
 
-pub unsafe trait Module: Default {}
+pub unsafe trait Module {}
 
 pub trait With<M: Module> {
 	fn get(&self) -> &M;
