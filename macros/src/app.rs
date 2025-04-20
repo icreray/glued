@@ -19,7 +19,7 @@ pub fn derive(ast: DeriveInput) -> syn::Result<TokenStream2> {
 
 		let field_type = &field.ty;
 		quote! {
-			impl #impl_generics With<#field_type> for #struct_name #ty_generics #where_clause {
+			impl #impl_generics glued::module::With<#field_type> for #struct_name #ty_generics #where_clause {
 				#[inline(always)]
 				fn get(&self) -> &#field_type {&self.#name}
 				#[inline(always)]
@@ -34,7 +34,7 @@ pub fn derive(ast: DeriveInput) -> syn::Result<TokenStream2> {
 	});
 
 	Ok(quote! {
-		unsafe impl #impl_generics ModularApp for #struct_name #ty_generics #where_clause {}
+		unsafe impl #impl_generics glued::ModularApp for #struct_name #ty_generics #where_clause {}
 		impl #impl_generics #struct_name #ty_generics #where_clause {
 			pub fn update(&mut self) {
 				#(#update_calls)*
@@ -43,14 +43,14 @@ pub fn derive(ast: DeriveInput) -> syn::Result<TokenStream2> {
 		#(#with_impls)*
 		impl #impl_generics #struct_name #ty_generics #where_clause {
 			#[inline(always)]
-			pub fn get_module<M: Module>(&self) -> &M
-			where Self: With<M> {
-				With::<M>::get(self)
+			pub fn get_module<M: glued::Module>(&self) -> &M
+			where Self: glued::module::With<M> {
+				glued::module::With::<M>::get(self)
 			}
 			#[inline(always)]
-			pub fn get_module_mut<M: Module>(&mut self) -> &mut M
-			where Self: With<M> {
-				With::<M>::get_mut(self)
+			pub fn get_module_mut<M: glued::Module>(&mut self) -> &mut M
+			where Self: glued::module::With<M> {
+				glued::module::With::<M>::get_mut(self)
 			}
 		}
 	})

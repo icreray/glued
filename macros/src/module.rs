@@ -25,7 +25,7 @@ pub(crate) fn module_impl(
 	for func in impl_block.items.iter_mut().filter_map(fn_item) {
 		check_function_declaration(func)?;
 		// fn foo(...) => fn foo<T: ModularApp>(...)
-		func.sig.generics.params.push(parse_quote!(#generic_ty: ModularApp));
+		func.sig.generics.params.push(parse_quote!(#generic_ty: glued::ModularApp));
 		add_required_module_bounds(func, &generic_ty)?;
 	}
 	Ok(impl_block.to_token_stream())
@@ -61,7 +61,7 @@ fn add_required_module_bounds(func: &mut ImplItemFn, generic_ty: &Ident) -> syn:
 		.extend(
 			module_types.into_iter().map(|m| -> WherePredicate {
 				parse_quote_spanned!(m.span()=>
-						#generic_ty: With<#m>
+						#generic_ty: glued::module::With<#m>
 				)
 			})
 		);
