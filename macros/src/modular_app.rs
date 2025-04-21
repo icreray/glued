@@ -4,7 +4,7 @@ use syn::{DeriveInput, Index};
 
 use crate::utils;
 
-pub fn derive(ast: DeriveInput) -> syn::Result<TokenStream2> {
+pub fn expand_derive(ast: DeriveInput) -> syn::Result<TokenStream2> {
 	let fields = utils::get_struct_fields(&ast.data)?;
 
 	let generics = ast.generics;

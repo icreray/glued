@@ -9,7 +9,7 @@ use crate::utils::{VisibilityExt, spanned_error};
 
 const REQUIRES_ATTR: &str = "requires";
 
-pub(crate) fn derive(ast: DeriveInput) -> TokenStream2 {
+pub(crate) fn expand_derive(ast: DeriveInput) -> TokenStream2 {
 	let generics = ast.generics;
 	let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
 	let struct_ident = &ast.ident;
@@ -18,7 +18,7 @@ pub(crate) fn derive(ast: DeriveInput) -> TokenStream2 {
 	}
 }
 
-pub(crate) fn module_impl(
+pub(crate) fn expand_module_impl(
 	generic_ty: Ident,
 	mut impl_block: ItemImpl
 ) -> syn::Result<TokenStream2> {
