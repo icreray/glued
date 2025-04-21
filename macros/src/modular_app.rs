@@ -43,12 +43,12 @@ pub fn expand_derive(ast: DeriveInput) -> syn::Result<TokenStream2> {
 		#(#with_impls)*
 		impl #impl_generics #struct_name #ty_generics #where_clause {
 			#[inline(always)]
-			pub fn get_module<M: glued::Module>(&self) -> &M
+			pub fn get_module<M: glued::module::Module>(&self) -> &M
 			where Self: glued::module::With<M> {
 				glued::module::With::<M>::get(self)
 			}
 			#[inline(always)]
-			pub fn get_module_mut<M: glued::Module>(&mut self) -> &mut M
+			pub fn get_module_mut<M: glued::module::Module>(&mut self) -> &mut M
 			where Self: glued::module::With<M> {
 				glued::module::With::<M>::get_mut(self)
 			}
