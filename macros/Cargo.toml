@@ -10,3 +10,4 @@ proc-macro = true
 syn = { version = "2.0.100", features = ["full"] }
 quote = "1.0.40"
 proc-macro2 = "1.0.94"
+proc-macro-crate = "3.3.0"

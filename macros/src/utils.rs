@@ -33,3 +33,30 @@ impl VisibilityExt for Visibility {
 		}
 	}
 }
+
+pub(crate) mod paths {
+	use proc_macro2::TokenStream;
+	use proc_macro_crate::{crate_name, FoundCrate};
+	use quote::quote;
+
+	pub fn glued_crate_name() -> TokenStream {
+		let found = crate_name("glued")
+			.expect("Failed to find crate \'glued\'");
+		match found {
+			FoundCrate::Itself => quote! {crate},
+			FoundCrate::Name(name) => quote! {#name}
+		}
+	}
+
+	pub fn modular_app_trait(crate_name: &TokenStream) -> TokenStream {
+		quote! {#crate_name::ModularApp}
+	}
+
+	pub fn module_trait(crate_name: &TokenStream) -> TokenStream {
+		quote! {#crate_name::module::Module}
+	}
+
+	pub fn with_trait(crate_name: &TokenStream) -> TokenStream {
+		quote! {#crate_name::module::With}
+	}
+}

@@ -5,7 +5,7 @@ use syn::{
 	parse_quote, parse_quote_spanned, punctuated::Punctuated, spanned::Spanned
 };
 
-use crate::utils::{VisibilityExt, spanned_error};
+use crate::utils::{spanned_error, VisibilityExt, paths::*};
 
 const REQUIRES_ATTR: &str = "requires";
 
@@ -13,8 +13,11 @@ pub(crate) fn expand_derive(ast: DeriveInput) -> TokenStream2 {
 	let generics = ast.generics;
 	let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
 	let struct_ident = &ast.ident;
+
+	let module_trait = module_trait(&glued_crate_name());
+
 	quote! {
-		unsafe impl #impl_generics Module for #struct_ident #ty_generics #where_clause {}
+		unsafe impl #impl_generics #module_trait for #struct_ident #ty_generics #where_clause {}
 	}
 }
 
@@ -22,11 +25,16 @@ pub(crate) fn expand_module_impl(
 	generic_ty: Ident,
 	mut impl_block: ItemImpl
 ) -> syn::Result<TokenStream2> {
+
+	let crate_name = glued_crate_name();
+	let modular_app_trait = modular_app_trait(&crate_name);
+	let with_trait = with_trait(&crate_name);
+
 	for func in impl_block.items.iter_mut().filter_map(fn_item) {
 		check_function_declaration(func)?;
 		// fn foo(...) => fn foo<T: ModularApp>(...)
-		func.sig.generics.params.push(parse_quote!(#generic_ty: glued::ModularApp));
-		add_required_module_bounds(func, &generic_ty)?;
+		func.sig.generics.params.push(parse_quote!(#generic_ty: #modular_app_trait));
+		add_required_module_bounds(func, &generic_ty, &with_trait)?;
 	}
 	Ok(impl_block.to_token_stream())
 }
@@ -49,7 +57,11 @@ fn fn_item(item: &mut ImplItem) -> Option<&mut ImplItemFn> {
 	}
 }
 
-fn add_required_module_bounds(func: &mut ImplItemFn, generic_ty: &Ident) -> syn::Result<()> {
+fn add_required_module_bounds(
+	func: &mut ImplItemFn, 
+	generic_ty: &Ident,
+	with_trait: &TokenStream2
+) -> syn::Result<()> {
 	let Some(required_attr) = take_attr(&mut func.attrs, REQUIRES_ATTR) else {
 		return Ok(());
 	};
@@ -61,7 +73,7 @@ fn add_required_module_bounds(func: &mut ImplItemFn, generic_ty: &Ident) -> syn:
 		.extend(
 			module_types.into_iter().map(|m| -> WherePredicate {
 				parse_quote_spanned!(m.span()=>
-						#generic_ty: glued::module::With<#m>
+						#generic_ty: #with_trait<#m>
 				)
 			})
 		);

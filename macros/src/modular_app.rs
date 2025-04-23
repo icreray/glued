@@ -2,7 +2,7 @@ use proc_macro2::{Ident, TokenStream as TokenStream2};
 use quote::{ToTokens, quote};
 use syn::{DeriveInput, Index};
 
-use crate::utils;
+use crate::utils::{self, paths::*};
 
 pub fn expand_derive(ast: DeriveInput) -> syn::Result<TokenStream2> {
 	let fields = utils::get_struct_fields(&ast.data)?;
@@ -10,6 +10,11 @@ pub fn expand_derive(ast: DeriveInput) -> syn::Result<TokenStream2> {
 	let generics = ast.generics;
 	let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
 	let struct_name = &ast.ident;
+
+	let crate_name = glued_crate_name();
+	let with_trait = with_trait(&crate_name);
+	let modular_app_trait = modular_app_trait(&crate_name);
+	let module_trait = module_trait(&crate_name);
 
 	let with_impls = fields.iter().enumerate().map(|(i, field)| {
 		let name = field.ident.as_ref().map_or(
@@ -19,7 +24,7 @@ pub fn expand_derive(ast: DeriveInput) -> syn::Result<TokenStream2> {
 
 		let field_type = &field.ty;
 		quote! {
-			impl #impl_generics glued::module::With<#field_type> for #struct_name #ty_generics #where_clause {
+			impl #impl_generics #with_trait<#field_type> for #struct_name #ty_generics #where_clause {
 				#[inline(always)]
 				fn get(&self) -> &#field_type {&self.#name}
 				#[inline(always)]
@@ -34,7 +39,7 @@ pub fn expand_derive(ast: DeriveInput) -> syn::Result<TokenStream2> {
 	});
 
 	Ok(quote! {
-		unsafe impl #impl_generics glued::ModularApp for #struct_name #ty_generics #where_clause {}
+		unsafe impl #impl_generics #modular_app_trait for #struct_name #ty_generics #where_clause {}
 		impl #impl_generics #struct_name #ty_generics #where_clause {
 			pub fn update(&mut self) {
 				#(#update_calls)*
@@ -43,14 +48,14 @@ pub fn expand_derive(ast: DeriveInput) -> syn::Result<TokenStream2> {
 		#(#with_impls)*
 		impl #impl_generics #struct_name #ty_generics #where_clause {
 			#[inline(always)]
-			pub fn get_module<M: glued::module::Module>(&self) -> &M
-			where Self: glued::module::With<M> {
-				glued::module::With::<M>::get(self)
+			pub fn get_module<M: #module_trait>(&self) -> &M
+			where Self: #with_trait<M> {
+				#with_trait::<M>::get(self)
 			}
 			#[inline(always)]
-			pub fn get_module_mut<M: glued::module::Module>(&mut self) -> &mut M
-			where Self: glued::module::With<M> {
-				glued::module::With::<M>::get_mut(self)
+			pub fn get_module_mut<M: #module_trait>(&mut self) -> &mut M
+			where Self: #with_trait<M> {
+				#with_trait::<M>::get_mut(self)
 			}
 		}
 	})

@@ -16,12 +16,11 @@ pub unsafe trait ModularApp {
 
 #[cfg(test)]
 mod test {
-	extern crate self as glued;
 
 	#[test]
 	fn module_communication() {
 		use glued_macros::module_impl;
-		use glued::{Module, ModularApp};
+		use crate::{Module, ModularApp};
 
 		#[derive(Module, Default)]
 		struct A(u32);
