@@ -66,11 +66,7 @@ mod test {
 		}
 
 		#[module_impl(A)]
-		impl<'a, T> ModuleA<'a, T> {
-			#[requires(Self)]
-			#[allow(dead_code)]
-			pub fn update(_app: &mut A) {}
-		}
+		impl<'a, T> ModuleA<'a, T> {}
 
 		#[derive(ModularApp)]
 		struct App<'a>(ModuleA<'a, u32>);

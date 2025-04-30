@@ -1,4 +1,6 @@
-use proc_macro2::{Ident, TokenStream as TokenStream2};
+use std::collections::HashSet;
+
+use proc_macro2::{Ident, Span, TokenStream as TokenStream2};
 use quote::{ToTokens, quote};
 use syn::{
 	Attribute, DeriveInput, ImplItem, ImplItemFn, ItemImpl, Token, Type, WherePredicate,
@@ -6,8 +8,6 @@ use syn::{
 };
 
 use crate::utils::{spanned_error, VisibilityExt, paths::*};
-
-const REQUIRES_ATTR: &str = "requires";
 
 pub(crate) fn expand_derive(ast: DeriveInput) -> TokenStream2 {
 	let generics = ast.generics;
@@ -21,6 +21,9 @@ pub(crate) fn expand_derive(ast: DeriveInput) -> TokenStream2 {
 	}
 }
 
+const REQUIRES_ATTR: &str = "requires";
+const MODULE_IMPL_FUNCTIONS: [&str; 1] = ["update"];
+
 pub(crate) fn expand_module_impl(
 	generic_ty: Ident,
 	mut impl_block: ItemImpl
@@ -30,34 +33,46 @@ pub(crate) fn expand_module_impl(
 	let modular_app_trait = modular_app_trait(&crate_name);
 	let with_trait = with_trait(&crate_name);
 
-	for func in impl_block.items.iter_mut().filter_map(fn_item) {
-		check_function_declaration(func)?;
-		// fn foo(...) => fn foo<T: ModularApp>(...)
-		func.sig.generics.params.push(parse_quote!(#generic_ty: #modular_app_trait));
-		add_required_module_bounds(func, &generic_ty, &with_trait)?;
+	let mut required_fns: HashSet<&str> = MODULE_IMPL_FUNCTIONS.into();
+
+	for func in impl_block.items
+		.iter_mut()
+		.filter_map(fn_item_mut) {
+			validate_function_declaration(func, &mut required_fns)?;
+			// fn foo(...) => fn foo<T: ModularApp>(...)
+			func.sig.generics.params.push(parse_quote!(#generic_ty: #modular_app_trait));
+			add_module_bounds(func, &generic_ty, &with_trait)?;
 	}
+
+	impl_block.items.extend(
+		create_missing_functions(required_fns, &generic_ty)
+	);
+
 	Ok(impl_block.to_token_stream())
 }
 
-fn check_function_declaration(func: &ImplItemFn) -> syn::Result<()> {
+fn validate_function_declaration(
+	func: &ImplItemFn, 
+	required_fns: &mut HashSet<&str>
+) -> syn::Result<()> {
+	let fn_name = func.sig.ident.to_string();
+	if !required_fns.remove(fn_name.as_str()) {
+		return spanned_error!(
+			func,
+			format!("#[module_impl(T)] annotated impl block may contain only specific functions: {:?}", MODULE_IMPL_FUNCTIONS)
+		);
+	}
 	if !func.vis.is_public() {
 		spanned_error!(
 			func,
-			"#[module_impl] annotated impl block may contain only public functions"
+			"#[module_impl] functions must be public"
 		)
 	} else {
 		Ok(())
 	}
 }
 
-fn fn_item(item: &mut ImplItem) -> Option<&mut ImplItemFn> {
-	match item {
-		ImplItem::Fn(func) => Some(func),
-		_ => None
-	}
-}
-
-fn add_required_module_bounds(
+fn add_module_bounds(
 	func: &mut ImplItemFn, 
 	generic_ty: &Ident,
 	with_trait: &TokenStream2
@@ -78,6 +93,26 @@ fn add_required_module_bounds(
 			})
 		);
 	Ok(())
+}
+
+fn create_missing_functions(
+	missing_fns: HashSet<&str>,
+	generic_ty: &Ident
+) -> impl Iterator<Item = ImplItem> {
+	missing_fns.into_iter().map(move |fn_name| {
+		let ident = Ident::new(fn_name, Span::call_site());
+		parse_quote! {
+			#[allow(dead_code)]
+			pub fn #ident<#generic_ty>(_app: &mut #generic_ty) {}
+		}
+	})
+}
+
+fn fn_item_mut(item: &mut ImplItem) -> Option<&mut ImplItemFn> {
+	match item {
+		ImplItem::Fn(func) => Some(func),
+		_ => None
+	}
 }
 
 fn take_attr(attrs: &mut Vec<Attribute>, name: &str) -> Option<Attribute> {
