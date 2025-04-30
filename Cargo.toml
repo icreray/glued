@@ -3,5 +3,8 @@ name = "glued"
 version = "0.0.1"
 edition = "2024"
 
+[workspace]
+members = ["macros"]
+
 [dependencies]
 glued-macros = { path = "./macros" }
