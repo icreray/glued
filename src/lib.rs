@@ -12,6 +12,9 @@ pub unsafe trait ModularApp {
 	where Self: With<M> {
 		With::<M>::get_mut(self)
 	}
+
+// Schedule
+	fn setup(&mut self);
 	fn update(&mut self);
 }
 

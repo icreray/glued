@@ -33,13 +33,20 @@ pub fn expand_derive(ast: DeriveInput) -> syn::Result<TokenStream2> {
 		}
 	});
 
-	let update_calls = fields.iter().map(|field| {
+	let calls: (Vec<_>, Vec<_>) = fields.iter().map(|field| {
 		let field_type = &field.ty;
-		quote! { <#field_type>::update(self); }
-	});
+		(
+			quote! { <#field_type>::setup(self); },
+			quote! { <#field_type>::update(self); }
+		) 
+	}).unzip();
+	let (setup_calls, update_calls) = calls;
 
 	Ok(quote! {
 		unsafe impl #impl_generics #modular_app_trait for #struct_name #ty_generics #where_clause {
+			fn setup(&mut self) {
+				#(#setup_calls)*
+			}
 			fn update(&mut self) {
 				#(#update_calls)*
 			}

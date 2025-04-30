@@ -22,7 +22,7 @@ pub(crate) fn expand_derive(ast: DeriveInput) -> TokenStream2 {
 }
 
 const REQUIRES_ATTR: &str = "requires";
-const MODULE_IMPL_FUNCTIONS: [&str; 1] = ["update"];
+const MODULE_IMPL_FUNCTIONS: [&str; 2] = ["setup", "update"];
 
 pub(crate) fn expand_module_impl(
 	generic_ty: Ident,
