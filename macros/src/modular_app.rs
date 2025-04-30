@@ -39,9 +39,8 @@ pub fn expand_derive(ast: DeriveInput) -> syn::Result<TokenStream2> {
 	});
 
 	Ok(quote! {
-		unsafe impl #impl_generics #modular_app_trait for #struct_name #ty_generics #where_clause {}
-		impl #impl_generics #struct_name #ty_generics #where_clause {
-			pub fn update(&mut self) {
+		unsafe impl #impl_generics #modular_app_trait for #struct_name #ty_generics #where_clause {
+			fn update(&mut self) {
 				#(#update_calls)*
 			}
 		}

@@ -12,6 +12,7 @@ pub unsafe trait ModularApp {
 	where Self: With<M> {
 		With::<M>::get_mut(self)
 	}
+	fn update(&mut self);
 }
 
 #[cfg(test)]
