@@ -38,13 +38,15 @@ pub(crate) mod paths {
 	use proc_macro2::TokenStream;
 	use proc_macro_crate::{crate_name, FoundCrate};
 	use quote::quote;
+	use syn::parse_str;
 
 	pub fn glued_crate_name() -> TokenStream {
 		let found = crate_name("glued")
 			.expect("Failed to find crate \'glued\'");
 		match found {
 			FoundCrate::Itself => quote! {crate},
-			FoundCrate::Name(name) => quote! {#name}
+			FoundCrate::Name(name) => parse_str(&name)
+				.expect("Failed to parse crate name into tokens")
 		}
 	}
 
