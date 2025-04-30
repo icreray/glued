@@ -35,7 +35,7 @@ pub fn expand_derive(ast: DeriveInput) -> syn::Result<TokenStream2> {
 
 	let update_calls = fields.iter().map(|field| {
 		let field_type = &field.ty;
-		quote! { #field_type::update(self); }
+		quote! { <#field_type>::update(self); }
 	});
 
 	Ok(quote! {

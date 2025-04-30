@@ -16,7 +16,6 @@ pub unsafe trait ModularApp {
 
 #[cfg(test)]
 mod test {
-
 	#[test]
 	fn module_communication() {
 		use glued_macros::module_impl;
@@ -46,13 +45,38 @@ mod test {
 			}
 		}
 
-		#[derive(ModularApp)]
+		#[derive(ModularApp, Default)]
 		struct App(A, B);
 
-		let mut app = App(A::default(), B::default());
+		let mut app = App::default();
 		app.update();
 		
 		assert_eq!(app.module::<A>().0, 1u32);
 		assert_eq!(app.module::<B>().0, 12u32);
+	}
+
+	#[test]
+	fn generic_modules() {
+		use glued_macros::module_impl;
+		use crate::{Module, ModularApp};
+
+		#[derive(Module)]
+		struct ModuleA<'a, T> {
+			handle: &'a T
+		}
+
+		#[module_impl(A)]
+		impl<'a, T> ModuleA<'a, T> {
+			#[requires(Self)]
+			#[allow(dead_code)]
+			pub fn update(_app: &mut A) {}
+		}
+
+		#[derive(ModularApp)]
+		struct App<'a>(ModuleA<'a, u32>);
+
+		let foo = 1;
+		let app = App(ModuleA { handle: &foo });
+		assert_eq!(*app.module::<ModuleA<'_, u32>>().handle, 1);
 	}
 }
