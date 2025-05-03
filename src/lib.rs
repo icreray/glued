@@ -4,10 +4,13 @@ pub use glued_macros::{ModularApp, module_impl};
 use crate::module::{Module, With};
 
 pub unsafe trait ModularApp {
+	#[must_use]
 	fn module<M: Module>(&self) -> &M
 	where Self: With<M> {
 		With::<M>::get(self)
 	}
+
+	#[must_use]
 	fn module_mut<M: Module>(&mut self) -> &mut M
 	where Self: With<M> {
 		With::<M>::get_mut(self)
