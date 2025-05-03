@@ -1,5 +1,7 @@
 pub use glued_macros::Module;
 
+/// # Safety
+/// Should be only implemented via `#[derive(Module)]`
 pub unsafe trait Module {}
 
 pub trait With<M: Module> {

@@ -3,6 +3,8 @@ pub mod module;
 pub use glued_macros::{ModularApp, module_impl};
 use crate::module::{Module, With};
 
+/// # Safety
+/// Should be only implemented via `#[derive(ModularApp)]`
 pub unsafe trait ModularApp {
 	#[must_use]
 	fn module<M: Module>(&self) -> &M
