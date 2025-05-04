@@ -1,26 +1,14 @@
 use std::collections::HashSet;
 
 use proc_macro2::{Ident, Span, TokenStream as TokenStream2};
-use quote::{ToTokens, quote};
+use quote::quote;
 use syn::{
 	parse_quote, parse_quote_spanned, punctuated::Punctuated, spanned::Spanned,
-	Attribute, DeriveInput, ImplItem, ImplItemFn, ItemImpl, Token, Type, Visibility,
+	Attribute, ImplItem, ImplItemFn, ItemImpl, Token, Type, Visibility,
 	WherePredicate
 };
 
 use crate::utils::{spanned_error, paths::*};
-
-pub(crate) fn expand_derive(ast: DeriveInput) -> TokenStream2 {
-	let generics = ast.generics;
-	let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
-	let struct_ident = &ast.ident;
-
-	let module_trait = module_trait(&glued_crate_name());
-
-	quote! {
-		unsafe impl #impl_generics #module_trait for #struct_ident #ty_generics #where_clause {}
-	}
-}
 
 const REQUIRES_ATTR: &str = "requires";
 const MODULE_IMPL_FUNCTIONS: [&str; 2] = ["setup", "update"];
@@ -49,7 +37,24 @@ pub(crate) fn expand_module_impl(
 		create_missing_functions(required_fns, &generic_ty)
 	);
 
-	Ok(impl_block.to_token_stream())
+	let module_impl = derive_module(&impl_block, &crate_name);
+
+	Ok(quote! {
+		#module_impl
+		#impl_block
+	})
+}
+
+fn derive_module(
+	impl_block: &ItemImpl, 
+	crate_name: &TokenStream2
+) -> TokenStream2 {
+	let module_trait = module_trait(&crate_name);
+	let ident = &impl_block.self_ty;
+	let (impl_generics, _, where_clause) = impl_block.generics.split_for_impl();
+	quote! {
+		unsafe impl #impl_generics #module_trait for #ident #where_clause {}
+	}
 }
 
 fn validate_function_declaration(

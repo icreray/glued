@@ -28,14 +28,13 @@ mod test {
 	#[test]
 	fn module_communication() {
 		use glued_macros::module_impl;
-		use crate::{Module, ModularApp};
+		use crate::ModularApp;
 
-		#[derive(Module, Default)]
+		#[derive(Default)]
 		struct A(u32);
 
-		#[derive(Module, Default)]
+		#[derive(Default)]
 		struct B(u32);
-
 		
 		#[module_impl(T)]
 		impl A {
@@ -67,9 +66,8 @@ mod test {
 	#[test]
 	fn generic_modules() {
 		use glued_macros::module_impl;
-		use crate::{Module, ModularApp};
+		use crate::ModularApp;
 
-		#[derive(Module)]
 		struct ModuleA<'a, T> {
 			handle: &'a T
 		}

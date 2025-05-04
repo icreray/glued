@@ -5,11 +5,6 @@ mod utils;
 use proc_macro::TokenStream;
 use syn::{parse_macro_input, Error};
 
-#[proc_macro_derive(Module)]
-pub fn derive_module(input: TokenStream) -> TokenStream {
-	module::expand_derive(parse_macro_input!(input)).into()
-}
-
 #[proc_macro_derive(ModularApp)]
 pub fn derive_modular_app(input: TokenStream) -> TokenStream {
 	modular_app::expand_derive(parse_macro_input!(input))
