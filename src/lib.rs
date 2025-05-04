@@ -1,4 +1,7 @@
+pub use runner::*;
 pub mod module;
+
+mod runner;
 
 pub use glued_macros::{ModularApp, module_impl};
 use crate::module::{Module, With};
