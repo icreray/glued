@@ -1,5 +1,5 @@
 use syn::{
-	Data, DataStruct, Field, Fields, Visibility, punctuated::Punctuated, token::Comma
+	Data, DataStruct, Field, Fields, punctuated::Punctuated, token::Comma
 };
 
 macro_rules! spanned_error {
@@ -19,18 +19,6 @@ pub(crate) fn get_struct_fields(data: &Data) -> syn::Result<&Punctuated<Field, C
 			..
 		}) => Ok(&fields.unnamed),
 		_ => spanned_error!("Only structs are supported")
-	}
-}
-
-pub(crate) trait VisibilityExt {
-	fn is_public(&self) -> bool;
-}
-impl VisibilityExt for Visibility {
-	fn is_public(&self) -> bool {
-		match self {
-			Visibility::Public(_) => true,
-			_ => false
-		}
 	}
 }
 

@@ -3,11 +3,12 @@ use std::collections::HashSet;
 use proc_macro2::{Ident, Span, TokenStream as TokenStream2};
 use quote::{ToTokens, quote};
 use syn::{
-	Attribute, DeriveInput, ImplItem, ImplItemFn, ItemImpl, Token, Type, WherePredicate,
-	parse_quote, parse_quote_spanned, punctuated::Punctuated, spanned::Spanned
+	parse_quote, parse_quote_spanned, punctuated::Punctuated, spanned::Spanned,
+	Attribute, DeriveInput, ImplItem, ImplItemFn, ItemImpl, Token, Type, Visibility,
+	WherePredicate
 };
 
-use crate::utils::{spanned_error, VisibilityExt, paths::*};
+use crate::utils::{spanned_error, paths::*};
 
 pub(crate) fn expand_derive(ast: DeriveInput) -> TokenStream2 {
 	let generics = ast.generics;
@@ -62,7 +63,7 @@ fn validate_function_declaration(
 			format!("#[module_impl(T)] annotated impl block may contain only specific functions: {:?}", MODULE_IMPL_FUNCTIONS)
 		);
 	}
-	if !func.vis.is_public() {
+	if !matches!(func.vis, Visibility::Public(_)) {
 		spanned_error!(
 			func,
 			"#[module_impl] functions must be public"
