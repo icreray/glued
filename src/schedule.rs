@@ -21,5 +21,5 @@ where
 	L: ScheduleLabel,
 	A: ModularApp,
 	M: Module {
-		default fn run(app: &mut A) {}
+		default fn run(_app: &mut A) {}
 }
