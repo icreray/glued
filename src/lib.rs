@@ -1,10 +1,10 @@
+pub use module::*;
 pub use runner::*;
-pub mod module;
 
+mod module;
 mod runner;
 
-pub use glued_macros::{ModularApp, module_impl};
-use crate::module::{Module, With};
+pub use glued_macros::*;
 
 /// # Safety
 /// Should be only implemented via `#[derive(ModularApp)]`
@@ -30,8 +30,7 @@ pub unsafe trait ModularApp {
 mod test {
 	#[test]
 	fn module_communication() {
-		use glued_macros::module_impl;
-		use crate::ModularApp;
+		use crate::{ModularApp, module_impl};
 
 		#[derive(Default)]
 		struct A(u32);
@@ -68,8 +67,7 @@ mod test {
 
 	#[test]
 	fn generic_modules() {
-		use glued_macros::module_impl;
-		use crate::ModularApp;
+		use crate::{ModularApp, module_impl};
 
 		struct ModuleA<'a, T> {
 			handle: &'a T
