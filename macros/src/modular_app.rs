@@ -14,7 +14,6 @@ pub fn expand_derive(ast: DeriveInput) -> syn::Result<TokenStream2> {
 	let crate_name = glued_crate_name();
 	let with_trait = with_trait(&crate_name);
 	let modular_app_trait = modular_app_trait(&crate_name);
-	let module_trait = module_trait(&crate_name);
 
 	let with_impls = fields.iter().enumerate().map(|(i, field)| {
 		let name = field.ident.as_ref().map_or(
@@ -52,17 +51,5 @@ pub fn expand_derive(ast: DeriveInput) -> syn::Result<TokenStream2> {
 			}
 		}
 		#(#with_impls)*
-		impl #impl_generics #struct_name #ty_generics #where_clause {
-			#[inline(always)]
-			pub fn get_module<M: #module_trait>(&self) -> &M
-			where Self: #with_trait<M> {
-				#with_trait::<M>::get(self)
-			}
-			#[inline(always)]
-			pub fn get_module_mut<M: #module_trait>(&mut self) -> &mut M
-			where Self: #with_trait<M> {
-				#with_trait::<M>::get_mut(self)
-			}
-		}
 	})
 }
