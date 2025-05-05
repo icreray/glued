@@ -1,3 +1,5 @@
+#![feature(specialization)]
+
 pub use runner::*;
 pub use schedule::*;
 pub use module::*;

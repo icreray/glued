@@ -12,7 +12,7 @@ pub trait System<L, A>: Module
 where L: ScheduleLabel, A: ModularApp {
 
 	#[allow(unused_variables)]
-	fn run(app: &mut A) {}
+	fn run(app: &mut A);
 }
 
 
@@ -20,4 +20,6 @@ impl<L, A, M> System<L, A> for M
 where 
 	L: ScheduleLabel,
 	A: ModularApp,
-	M: Module {}
+	M: Module {
+		default fn run(app: &mut A) {}
+}
