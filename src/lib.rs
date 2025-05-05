@@ -1,10 +1,12 @@
 pub use runner::*;
-pub mod module;
+pub use schedule::*;
+pub use module::*;
 
 mod runner;
+mod schedule;
+mod module;
 
-pub use glued_macros::{ModularApp, module_impl};
-use crate::module::{Module, With};
+pub use glued_macros::ModularApp;
 
 /// # Safety
 /// Should be only implemented via `#[derive(ModularApp)]`
@@ -21,62 +23,59 @@ pub unsafe trait ModularApp {
 		With::<M>::get_mut(self)
 	}
 
-// Schedule
-	fn setup(&mut self);
-	fn update(&mut self);
+	fn run<L: ScheduleLabel>(&mut self);
 }
 
 #[cfg(test)]
 mod test {
+
 	#[test]
 	fn module_communication() {
-		use glued_macros::module_impl;
-		use crate::ModularApp;
+		use crate::{Module, ModularApp, ScheduleLabel, System, With};
 
-		#[derive(Default)]
-		struct A(u32);
+		#[derive(Module, Default)]
+		struct ModuleA(u32);
 
-		#[derive(Default)]
-		struct B(u32);
+		#[derive(Module, Default)]
+		struct ModuleB(u32);
+
+		#[derive(ScheduleLabel)]
+		struct Update;
 		
-		#[module_impl(T)]
-		impl A {
-			#[requires(B)]
-			pub fn update(app: &mut T) {
-				app.module_mut::<B>().0 = 2;
+		impl<A> System<Update, A> for ModuleA
+		where A: ModularApp + With<ModuleB> {
+			fn run(app: &mut A) {
+				app.module_mut::<ModuleB>()
+					.0 = 2;
 			}
 		}
 
-		#[module_impl(T)]
-		impl B {
-			#[requires(Self, A)]
-			pub fn update(app: &mut T) {
+		impl<A> System<Update, A> for ModuleB
+		where A: ModularApp + With<Self> + With<ModuleA> {
+			fn run(app: &mut A) {
 				app.module_mut::<Self>().0 += 10;
-				app.module_mut::<A>().0 = 1;
+				app.module_mut::<ModuleA>().0 = 1;
 			}
 		}
 
 		#[derive(ModularApp, Default)]
-		struct App(A, B);
+		struct App(ModuleA, ModuleB);
 
 		let mut app = App::default();
-		app.update();
+		app.run::<Update>();
 		
-		assert_eq!(app.module::<A>().0, 1u32);
-		assert_eq!(app.module::<B>().0, 12u32);
+		assert_eq!(app.module::<ModuleA>().0, 1u32);
+		assert_eq!(app.module::<ModuleB>().0, 12u32);
 	}
 
 	#[test]
 	fn generic_modules() {
-		use glued_macros::module_impl;
-		use crate::ModularApp;
+		use crate::{ModularApp, Module};
 
+		#[derive(Module)]
 		struct ModuleA<'a, T> {
 			handle: &'a T
 		}
-
-		#[module_impl(A)]
-		impl<'a, T> ModuleA<'a, T> {}
 
 		#[derive(ModularApp)]
 		struct App<'a>(ModuleA<'a, u32>);

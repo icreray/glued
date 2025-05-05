@@ -1,5 +1,5 @@
 use syn::{
-	Data, DataStruct, Field, Fields, punctuated::Punctuated, token::Comma
+	punctuated::Punctuated, token::Comma, Data, DataStruct, Field, Fields
 };
 
 macro_rules! spanned_error {
@@ -43,10 +43,18 @@ pub(crate) mod paths {
 	}
 
 	pub fn module_trait(crate_name: &TokenStream) -> TokenStream {
-		quote! {#crate_name::module::Module}
+		quote! {#crate_name::Module}
 	}
 
 	pub fn with_trait(crate_name: &TokenStream) -> TokenStream {
-		quote! {#crate_name::module::With}
+		quote! {#crate_name::With}
+	}
+
+	pub fn schedule_label_trait(crate_name: &TokenStream) -> TokenStream {
+		quote! {#crate_name::ScheduleLabel}
+	}
+
+	pub fn schedule_system_trait(crate_name: &TokenStream) -> TokenStream {
+		quote! {#crate_name::System}
 	}
 }

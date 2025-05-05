@@ -1,3 +1,5 @@
+pub use glued_macros::Module;
+
 /// # Safety
 /// Should be only implemented via `#[module_impl(T)]`
 pub unsafe trait Module {}

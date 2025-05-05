@@ -14,7 +14,8 @@ pub fn expand_derive(ast: DeriveInput) -> syn::Result<TokenStream2> {
 	let crate_name = glued_crate_name();
 	let with_trait = with_trait(&crate_name);
 	let modular_app_trait = modular_app_trait(&crate_name);
-	let module_trait = module_trait(&crate_name);
+	let schedule_label_trait = schedule_label_trait(&crate_name);
+	let system_trait = schedule_system_trait(&crate_name);
 
 	let with_impls = fields.iter().enumerate().map(|(i, field)| {
 		let name = field.ident.as_ref().map_or(
@@ -33,36 +34,18 @@ pub fn expand_derive(ast: DeriveInput) -> syn::Result<TokenStream2> {
 		}
 	});
 
-	let calls: (Vec<_>, Vec<_>) = fields.iter().map(|field| {
+	let calls = fields.iter().map(|field| {
 		let field_type = &field.ty;
-		(
-			quote! { <#field_type>::setup(self); },
-			quote! { <#field_type>::update(self); }
-		) 
-	}).unzip();
-	let (setup_calls, update_calls) = calls;
+		quote! { <#field_type as #system_trait<L, Self>>::run(self);}
+	}).collect::<Vec<_>>();
 
 	Ok(quote! {
 		unsafe impl #impl_generics #modular_app_trait for #struct_name #ty_generics #where_clause {
-			fn setup(&mut self) {
-				#(#setup_calls)*
-			}
-			fn update(&mut self) {
-				#(#update_calls)*
+			fn run<L: #schedule_label_trait>(&mut self) {
+				#(#calls)*
 			}
 		}
+
 		#(#with_impls)*
-		impl #impl_generics #struct_name #ty_generics #where_clause {
-			#[inline(always)]
-			pub fn get_module<M: #module_trait>(&self) -> &M
-			where Self: #with_trait<M> {
-				#with_trait::<M>::get(self)
-			}
-			#[inline(always)]
-			pub fn get_module_mut<M: #module_trait>(&mut self) -> &mut M
-			where Self: #with_trait<M> {
-				#with_trait::<M>::get_mut(self)
-			}
-		}
 	})
 }
