@@ -43,10 +43,10 @@ pub(crate) mod paths {
 	}
 
 	pub fn module_trait(crate_name: &TokenStream) -> TokenStream {
-		quote! {#crate_name::module::Module}
+		quote! {#crate_name::Module}
 	}
 
 	pub fn with_trait(crate_name: &TokenStream) -> TokenStream {
-		quote! {#crate_name::module::With}
+		quote! {#crate_name::With}
 	}
 }
