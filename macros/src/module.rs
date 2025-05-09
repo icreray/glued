@@ -3,12 +3,11 @@ use std::collections::HashSet;
 use proc_macro2::{Ident, Span, TokenStream as TokenStream2};
 use quote::quote;
 use syn::{
-	parse_quote, parse_quote_spanned, punctuated::Punctuated, spanned::Spanned,
-	Attribute, ImplItem, ImplItemFn, ItemImpl, Token, Type, Visibility,
-	WherePredicate
+	parse_quote, punctuated::Punctuated, Attribute, ImplItem, ImplItemFn, ItemImpl, 
+	Token, Type, TypeParam, TypeParamBound, Visibility
 };
 
-use crate::utils::{spanned_error, paths::*};
+use crate::utils::{paths::*, spanned_error};
 
 const REQUIRES_ATTR: &str = "requires";
 const MODULE_IMPL_FUNCTIONS: [&str; 2] = ["setup", "update"];
@@ -19,8 +18,7 @@ pub(crate) fn expand_module_impl(
 ) -> syn::Result<TokenStream2> {
 
 	let crate_name = glued_crate_name();
-	let modular_app_trait = modular_app_trait(&crate_name);
-	let with_trait = with_trait(&crate_name);
+	let param = create_param(&mut impl_block, &generic_ty, &crate_name)?;
 
 	let mut required_fns: HashSet<&str> = MODULE_IMPL_FUNCTIONS.into();
 
@@ -28,13 +26,12 @@ pub(crate) fn expand_module_impl(
 		.iter_mut()
 		.filter_map(fn_item_mut) {
 			validate_function_declaration(func, &mut required_fns)?;
-			// fn foo(...) => fn foo<T: ModularApp>(...)
-			func.sig.generics.params.push(parse_quote!(#generic_ty: #modular_app_trait));
-			add_module_bounds(func, &generic_ty, &with_trait)?;
+			// Add param to each functon cause it can't be added to impl block level
+			func.sig.generics.params.push(param.clone().into());
 	}
 
 	impl_block.items.extend(
-		create_missing_functions(required_fns, &generic_ty)
+		create_missing_functions(required_fns, &param)
 	);
 
 	let module_impl = derive_module(&impl_block, &crate_name);
@@ -49,7 +46,7 @@ fn derive_module(
 	impl_block: &ItemImpl, 
 	crate_name: &TokenStream2
 ) -> TokenStream2 {
-	let module_trait = module_trait(&crate_name);
+	let module_trait = module_trait(crate_name);
 	let ident = &impl_block.self_ty;
 	let (impl_generics, _, where_clause) = impl_block.generics.split_for_impl();
 	quote! {
@@ -78,38 +75,40 @@ fn validate_function_declaration(
 	}
 }
 
-fn add_module_bounds(
-	func: &mut ImplItemFn, 
+fn create_param(
+	impl_block: &mut ItemImpl,
 	generic_ty: &Ident,
-	with_trait: &TokenStream2
-) -> syn::Result<()> {
-	let Some(required_attr) = take_attr(&mut func.attrs, REQUIRES_ATTR) else {
-		return Ok(());
+	crate_name: &TokenStream2
+) -> syn::Result<TypeParam> {
+	let modular_app_trait = modular_app_trait(crate_name);
+	let with_trait = with_trait(crate_name);
+
+	let mut param: TypeParam = parse_quote!(#generic_ty: #modular_app_trait);
+	let Some(requires_attr) = take_attr(&mut impl_block.attrs, REQUIRES_ATTR) else {
+		return Ok(param);
 	};
-	let module_types = required_attr.parse_args_with(Punctuated::<Type, Token![,]>::parse_terminated)?;
-	func.sig
-		.generics
-		.make_where_clause()
-		.predicates
-		.extend(
-			module_types.into_iter().map(|m| -> WherePredicate {
-				parse_quote_spanned!(m.span()=>
-						#generic_ty: #with_trait<#m>
-				)
-			})
-		);
-	Ok(())
+
+	let module_types = requires_attr
+		.parse_args_with(Punctuated::<Type, Token![,]>::parse_terminated)?;
+
+	param.bounds.extend(
+		module_types
+			.into_iter()
+			.map(|m| -> TypeParamBound { parse_quote!(#with_trait<#m>) })
+	);
+	Ok(param)
 }
 
 fn create_missing_functions(
 	missing_fns: HashSet<&str>,
-	generic_ty: &Ident
+	param: &TypeParam
 ) -> impl Iterator<Item = ImplItem> {
+	let param_ident = &param.ident;
 	missing_fns.into_iter().map(move |fn_name| {
 		let ident = Ident::new(fn_name, Span::call_site());
 		parse_quote! {
 			#[allow(dead_code)]
-			pub fn #ident<#generic_ty>(_app: &mut #generic_ty) {}
+			pub fn #ident<#param>(_app: &mut #param_ident) {}
 		}
 	})
 }
