@@ -13,7 +13,7 @@ pub fn derive_modular_app(input: TokenStream) -> TokenStream {
 
 #[proc_macro_attribute]
 #[doc(hidden)]
-pub fn requires(_attr: TokenStream, item: TokenStream) -> TokenStream {
+pub fn dependencies(_attr: TokenStream, item: TokenStream) -> TokenStream {
 	item
 }
 

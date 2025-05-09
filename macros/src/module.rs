@@ -9,7 +9,7 @@ use syn::{
 
 use crate::utils::{paths::*, spanned_error};
 
-const REQUIRES_ATTR: &str = "requires";
+const DEPENDENCIES_ATTR: &str = "dependencies";
 const MODULE_IMPL_FUNCTIONS: [&str; 2] = ["setup", "update"];
 
 pub(crate) fn expand_module_impl(
@@ -84,11 +84,11 @@ fn create_param(
 	let with_trait = with_trait(crate_name);
 
 	let mut param: TypeParam = parse_quote!(#generic_ty: #modular_app_trait);
-	let Some(requires_attr) = take_attr(&mut impl_block.attrs, REQUIRES_ATTR) else {
+	let Some(deps_attr) = take_attr(&mut impl_block.attrs, DEPENDENCIES_ATTR) else {
 		return Ok(param);
 	};
 
-	let module_types = requires_attr
+	let module_types = deps_attr
 		.parse_args_with(Punctuated::<Type, Token![,]>::parse_terminated)?;
 
 	param.bounds.extend(

@@ -39,7 +39,7 @@ mod test {
 		struct B(u32);
 		
 		#[module_impl(T)]
-		#[requires(B)]
+		#[dependencies(B)]
 		impl A {
 			pub fn update(app: &mut T) {
 				app.module_mut::<B>().0 = 2;
@@ -47,7 +47,7 @@ mod test {
 		}
 
 		#[module_impl(T)]
-		#[requires(Self, A)]
+		#[dependencies(Self, A)]
 		impl B {
 			pub fn update(app: &mut T) {
 				app.module_mut::<Self>().0 += 10;
